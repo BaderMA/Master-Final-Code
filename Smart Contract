@@ -1,0 +1,54 @@
+// SPDX-License-Identifier: MIT 
+
+pragma solidity ^0.8.6;
+
+contract SmartContract {
+    struct Ctr {
+        address creator;
+        string name;
+        address[] users;
+        uint256 amount;
+    }
+    
+    uint256 totalCtrs;
+    mapping(uint256 => Ctr) public ctrs;
+    mapping(address => uint256) public balance;
+    
+    event CtrDistribution(uint256 ctrId, uint256 amount);
+    
+    function createCtr(   // Create name and amount on address. 'totalCtrs' start store values from 0.
+        string memory name,
+        address[] memory users,
+        uint256 initialAmount
+    ) public returns (uint256 ctrId) {
+        Ctr storage ctr = ctrs[totalCtrs];
+        
+        ctr.creator = msg.sender;
+        ctr.name = name;
+        ctr.users = users;
+        ctr.amount = initialAmount;
+        
+        totalCtrs += 1;
+        return totalCtrs - 1; // save values from Ctrs=0.
+    }
+    
+    function addAmount(uint256 ctrId, uint256 amount) public { // Define the contract users by 'ctrId' and their amounts. 
+        Ctr storage ctr = ctrs[ctrId];
+        require(msg.sender == ctr.creator, "Not contract owner"); // Verify the profile of the user.
+        ctr.amount += amount; // Addition of the amount 
+    }
+    
+    function distribute(uint256 ctrId) public { // Define the currency transformation. 
+        Ctr storage ctr = ctrs[ctrId];
+        uint256 amountPerUser = ctr.amount / ctr.users.length; // Balance of the users.
+        if (ctr.amount != 0) {
+            for (uint8 i; i < ctr.users.length; i++) {
+                ctr.amount -= amountPerUser;
+                balance[ctr.users[i]] = amountPerUser;
+            }
+        } else {
+            revert("No funds available");
+        }
+        emit CtrDistribution(ctrId, amountPerUser * ctr.users.length);
+    }
+}
